@@ -1,6 +1,7 @@
 import os.path
 import pickle
 
+
 class MyDB:
 
     def __init__(self, filename):
