@@ -8,25 +8,40 @@ test_squirrel_server.py:
 
 Squirrel Server Handler:
 
-Create squirrels:
+### Create squirrels:
+
 ✓ It queries db to create squirrel with given data attributes
 
-Handle methods:
+### Handle methods:
+
 ✓ It handles squirrels index
+
 ✓ It handles squirrels retrieve on existing squirrel
+
 ✓ It handles squirrels retrieve on nonexisting squirrel
+
 ✓ It handles squirrels create
+
 ✓ It handles squirrels update existing
+
 ✓ It handles squirrels update nonexisting
+
 ✓ It handles squirrels delete existing
+
 ✓ It handles squirrels delete nonexisting
+
 ✓ It handles 404
 
-Retrieve squirrels functionality:
+### Retrieve squirrels functionality:
+
 ✓ It queries db for squirrels
+
 ✓ It returns 200 status code
+
 ✓ It sends json content type header
+
 ✓ It calls end headers
+
 ✓ It returns response body with squirrels json data
 
 ============================== 15 passed in 0.05s ==============================
