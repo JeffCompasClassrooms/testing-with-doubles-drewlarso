@@ -139,6 +139,11 @@ def fake_get_squirrel_request(mocker):
 
 
 @pytest.fixture
+def fake_get_squirrel_request_doesnt_exist(mocker):
+    return FakeRequest(mocker.Mock(), 'GET', '/squirrels/100')
+
+
+@pytest.fixture
 def fake_create_squirrel_request(mocker):
     return FakeRequest(mocker.Mock(), 'POST', '/squirrels', body='name=Chippy&size=small')
 
@@ -360,11 +365,11 @@ def describe_SquirrelServerHandler():
             mock_end_headers.assert_called_once()
             response.wfile.write(bytes("404 Not Found", "utf-8"))
 
-        def it_handles_404(mocker, fake_update_squirrel_request, dummy_client, dummy_server, mock_db_get_nonexisting_squirrel, mock_db_update_squirrel, mock_response_methods):
+        def it_handles_404(mocker, fake_get_squirrel_request_doesnt_exist, dummy_client, dummy_server, mock_response_methods):
             mock_send_response, mock_send_header, mock_end_headers = mock_response_methods
 
             response = SquirrelServerHandler(
-                fake_update_squirrel_request, dummy_client, dummy_server)
+                fake_get_squirrel_request_doesnt_exist, dummy_client, dummy_server)
 
             mock_send_response.assert_called_once_with(404)
             mock_send_header.assert_called_once_with(
