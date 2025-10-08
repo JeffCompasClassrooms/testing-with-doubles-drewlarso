@@ -1,6 +1,7 @@
 import io
 import json
 import pytest
+import sqlite3
 from squirrel_server import SquirrelServerHandler
 from squirrel_db import SquirrelDB
 
@@ -64,8 +65,23 @@ def mock_db_get_squirrels(mocker, mock_db_init):
 
 
 @pytest.fixture
+def mock_db_get_squirrels_exception(mocker, mock_db_init):
+    return mocker.patch.object(SquirrelDB, 'getSquirrels', side_effect=sqlite3.DatabaseError)
+
+
+@pytest.fixture
+def mock_db_get_empty_squirrels(mocker, mock_db_init):
+    return mocker.patch.object(SquirrelDB, 'getSquirrels', return_value=[])
+
+
+@pytest.fixture
 def mock_db_get_squirrel(mocker, mock_db_init):
     return mocker.patch.object(SquirrelDB, 'getSquirrel', return_value="squirrel")
+
+
+@pytest.fixture
+def mock_db_get_squirrel_exception(mocker, mock_db_init):
+    return mocker.patch.object(SquirrelDB, 'getSquirrel', side_effect=sqlite3.DatabaseError)
 
 
 @pytest.fixture
@@ -79,16 +95,31 @@ def mock_db_create_squirrel(mocker, mock_db_init):
 
 
 @pytest.fixture
+def mock_db_create_squirrel_exception(mocker, mock_db_init):
+    return mocker.patch.object(SquirrelDB, 'createSquirrel', side_effect=sqlite3.DatabaseError)
+
+
+@pytest.fixture
 def mock_db_update_squirrel(mocker, mock_db_init):
     return mocker.patch.object(SquirrelDB, 'updateSquirrel')
+
+
+@pytest.fixture
+def mock_db_update_squirrel_exception(mocker, mock_db_init):
+    return mocker.patch.object(SquirrelDB, 'updateSquirrel', side_effect=sqlite3.DatabaseError)
 
 
 @pytest.fixture
 def mock_db_delete_squirrel(mocker, mock_db_init):
     return mocker.patch.object(SquirrelDB, 'deleteSquirrel')
 
-# patch SquirrelServerHandler to make our FakeRequest work correctly
 
+@pytest.fixture
+def mock_db_delete_squirrel_exception(mocker, mock_db_init):
+    return mocker.patch.object(SquirrelDB, 'deleteSquirrel', side_effect=sqlite3.DatabaseError)
+
+
+# patch SquirrelServerHandler to make our FakeRequest work correctly
 
 @pytest.fixture(autouse=True)
 def patch_wbufsize(mocker):
@@ -113,8 +144,18 @@ def fake_create_squirrel_request(mocker):
 
 
 @pytest.fixture
+def fake_create_squirrel_request_missing_data(mocker):
+    return FakeRequest(mocker.Mock(), 'POST', '/squirrels', body='name=Chippy')
+
+
+@pytest.fixture
 def fake_update_squirrel_request(mocker):
     return FakeRequest(mocker.Mock(), 'PUT', '/squirrels/1', body='name=Chippy&size=small')
+
+
+@pytest.fixture
+def fake_update_squirrel_request_missing_data(mocker):
+    return FakeRequest(mocker.Mock(), 'PUT', '/squirrels/1', body='name=Chippy')
 
 
 @pytest.fixture
@@ -122,8 +163,6 @@ def fake_delete_squirrel_request(mocker):
     return FakeRequest(mocker.Mock(), 'DELETE', '/squirrels/1')
 
 
-# not sure how to use this unless I rewrite the handle functions
-# right now they assume we are passing in all the right data in the body
 @pytest.fixture
 def fake_bad_request(mocker):
     return FakeRequest(mocker.Mock(), 'POST', '/squirrels', body='name=Josh&')
@@ -332,3 +371,41 @@ def describe_SquirrelServerHandler():
                 "Content-Type", "text/plain")
             mock_end_headers.assert_called_once()
             response.wfile.write(bytes("404 Not Found", "utf-8"))
+
+    def describe_errors():
+        def describe_key_errors():
+            def it_raises_key_error_on_create_with_missing_value(mocker, fake_create_squirrel_request_missing_data, dummy_client, dummy_server):
+                with pytest.raises(KeyError):
+                    SquirrelServerHandler(
+                        fake_create_squirrel_request_missing_data, dummy_client, dummy_server)
+
+            def it_raises_key_error_on_update_with_missing_value(mocker, fake_update_squirrel_request_missing_data, dummy_client, dummy_server):
+                with pytest.raises(KeyError):
+                    SquirrelServerHandler(
+                        fake_update_squirrel_request_missing_data, dummy_client, dummy_server)
+
+        def describe_database_errors():
+            def it_handles_db_exception_on_get_squirrel(mocker, fake_get_squirrel_request, dummy_client, dummy_server, mock_db_get_squirrel_exception, mock_response_methods):
+                with pytest.raises(sqlite3.DatabaseError):
+                    SquirrelServerHandler(
+                        fake_get_squirrel_request, dummy_client, dummy_server)
+
+            def it_handles_db_exception_on_get_squirrels(mocker, fake_get_squirrels_request, dummy_client, dummy_server, mock_db_get_squirrels_exception, mock_response_methods):
+                with pytest.raises(sqlite3.DatabaseError):
+                    SquirrelServerHandler(
+                        fake_get_squirrels_request, dummy_client, dummy_server)
+
+            def it_handles_db_exception_on_create_squirrel(mocker, fake_create_squirrel_request, dummy_client, dummy_server, mock_db_create_squirrel_exception, mock_response_methods):
+                with pytest.raises(sqlite3.DatabaseError):
+                    SquirrelServerHandler(
+                        fake_create_squirrel_request, dummy_client, dummy_server)
+
+            def it_handles_db_exception_on_update_squirrel(mocker, fake_update_squirrel_request, dummy_client, dummy_server, mock_db_get_squirrel, mock_db_update_squirrel_exception, mock_response_methods):
+                with pytest.raises(sqlite3.DatabaseError):
+                    SquirrelServerHandler(
+                        fake_update_squirrel_request, dummy_client, dummy_server)
+
+            def it_handles_db_exception_on_delete_squirrel(mocker, fake_delete_squirrel_request, dummy_client, dummy_server, mock_db_get_squirrel, mock_db_delete_squirrel_exception, mock_response_methods):
+                with pytest.raises(sqlite3.DatabaseError):
+                    SquirrelServerHandler(
+                        fake_delete_squirrel_request, dummy_client, dummy_server)
